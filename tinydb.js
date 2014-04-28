@@ -1,6 +1,8 @@
 fs = require('fs');
 
 function TinyDB(opts) {
+  var self = this;
+
   if (!(this instanceof TinyDB)) {
     return this;
   }
@@ -25,6 +27,10 @@ function TinyDB(opts) {
   }
 
   this._load();
+
+  process.on('exit', function() {
+    self._save(-1);
+  });
 
   return this;
 }
@@ -66,12 +72,17 @@ TinyDB.prototype._save = function(delay, callback) {
     clearTimeout(this._timeoutObj);
   }
 
-  this._timeoutObj = setTimeout(function() {
-    fs.writeFile(self.options.file, JSON.stringify(self._data), 'utf8', function(err) {
-      if (err) throw err;
-      return callback && callback();
-    });
-  }, delay === undefined ? 10000 : delay);
+  if (typeof delay === 'number' && 0 > delay) {
+    fs.writeFileSync(self.options.file, JSON.stringify(self._data), 'utf8');
+    return callback && callback();
+  } else {
+    this._timeoutObj = setTimeout(function() {
+      fs.writeFile(self.options.file, JSON.stringify(self._data), 'utf8', function(err) {
+        if (err) throw err;
+        return callback && callback();
+      });
+    }, delay === undefined ? 10000 : delay);
+  }
 }
 
 TinyDB.prototype.close = function(err, callback) {
