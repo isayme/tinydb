@@ -7,12 +7,12 @@
     "type" : "git",
     "url" : "https://github.com/isayme/tinydb.git"
   },
-  "keywords" : {
+  "keywords" : [
     "database",
 	"json",
 	"tiny",
 	"small"
-  },
+  ],
   "main" : "tinydb.js",
   "license" : "MIT"
 }
