@@ -1,7 +1,7 @@
 {
   "name" : "tinydb",
   "description" : "tiny json file based datebase for small nodejs projects",
-  "version" : "0.0.1",
+  "version" : "0.0.2",
   "author" : "iSayme <isaymeorg@gmail.com>",
   "repository" : {
     "type" : "git",

@@ -19,14 +19,34 @@ test_db = new TinyDB('./test.db');
 
 test_db.onReady = function() {
   console.log('database is ready for operating');
-  
-  // do other things below
-  todos.forEach(function (err, item) {
+
+  // set info to DB
+  test_db.setInfo('title', 'Test DB', function(err, key, value) {
     if (err) {
       console.log(err);
       return;
     }
+    
+    console.log('[setInfo] ' + key + ' : ' + value);
+  });
   
+  // get info from DB
+  test_db.getInfo('title', function(err, key, value) {
+    if (err) {
+      console.log(err);
+      return;
+    }
+    
+    console.log('[getInfo] ' + key + ' : ' + value);
+  });
+  
+  // do other things below
+  test_db.forEach(function (err, item) {
+    if (err) {
+      console.log(err);
+      return;
+    }
+
     for (var key in item) {
       console.log(key + ' : ' + item[key]);
     }
@@ -37,7 +57,7 @@ test_db.onReady = function() {
 APIs
 ====
 
-.close(err, callback)
+.close(callback)
 ------
 Close opened databse, and write the data in memory to your specified databse file.  
 All other APIs calling will be disable by sending a error type to callback function.
