@@ -21,11 +21,6 @@ function TinyDB(opts) {
     }
   }
 
-  if (!this.options.file) {
-    console.error('options.file undefined or empty.');
-    return this;
-  }
-
   this._load();
 
   process.on('exit', function() {
@@ -157,17 +152,13 @@ TinyDB.prototype.getInfo = function(key, callback) {
 }
 
 TinyDB.prototype.forEach = function(callback) {
-  if (typeof callback !== 'function') {
-    return;
-  }
-
   if ('ready' !== this._state) {
     return callback(new Error('database not ready.'));
   }
 
   for (var i = 0; i < this._data.data.length; i++) {
     if (this._data.data[i]._id) {
-      callback(null, this._data.data[i], i);
+      callback && callback(null, this._data.data[i], i);
     }
   }
 }
@@ -175,10 +166,6 @@ TinyDB.prototype.forEach = function(callback) {
 TinyDB.prototype.find = function(query, callback) {
   if ('ready' !== this._state) {
     return callback && callback(new Error('database not ready.'));
-  }
-  
-  if (typeof callback !== 'function') {
-    return;
   }
   
   var arr = [];
@@ -197,9 +184,9 @@ TinyDB.prototype.find = function(query, callback) {
   }
 
   if (arr.length) {
-    return callback(null, arr);
+    return callback && callback(null, arr);
   } else {
-    return callback(new Error('not found'));
+    return callback && callback(new Error('not found'));
   }
 }
 
@@ -255,7 +242,7 @@ TinyDB.prototype.appendItem = function(item, callback) {
   this._data.data.push(item);
   this._save();
 
-  return callback && callback(item, this._data.data.length - 1);
+  return callback && callback(null, item, this._data.data.length - 1);
 }
 
 module.exports = TinyDB;
