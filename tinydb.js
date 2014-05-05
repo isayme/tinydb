@@ -4,6 +4,7 @@ function TinyDB(opts) {
   var self = this;
 
   if (!(this instanceof TinyDB)) {
+    console.log('donot call this function directly!');
     return this;
   }
 
@@ -48,9 +49,14 @@ TinyDB.prototype._load = function() {
     if (typeof self._data.data === 'undefined') {
       self._data.data = [];
     }
+
+    if (Object.prototype.toString.call(self._data.data) !== '[object Array]') {
+      throw new Error('self._data.data not a Array.');
+    }
+
     self._state = 'ready';
 
-    if (typeof self.onReady == 'function') {
+    if (typeof self.onReady === 'function') {
       self.onReady();
     }
   });
