@@ -4,14 +4,14 @@ function TinyDB(opts) {
   var self = this;
 
   if (!(this instanceof TinyDB)) {
-    console.log('donot call this function directly!');
-    return this;
+    return new TinyDB(opts);
   }
 
   this._state = 'prepare';
   this._data = {};
   this.options = {
-    'file': ''
+    'file': '',
+    'flushonexit': true
   };
   
   if (typeof opts === 'string') {
@@ -24,9 +24,11 @@ function TinyDB(opts) {
 
   this._load();
 
-  process.on('exit', function() {
-    self._save(-1);
-  });
+  if (this.options['flushonexit'] === true) {
+    process.on('exit', function() {
+      self.flush();
+    });
+  }
 
   return this;
 }
@@ -43,7 +45,11 @@ TinyDB.prototype._load = function() {
     if (err) {
       self._data = {};
     } else {
-      self._data = JSON.parse(data.toString());
+      try {
+        self._data = JSON.parse(data.toString());
+      } catch(e) {
+        throw new Error('database format error!');
+      }
     }
 
     if (typeof self._data.data === 'undefined') {
@@ -60,7 +66,28 @@ TinyDB.prototype._load = function() {
       self.onReady();
     }
   });
-}
+};
+
+TinyDB.prototype.flush = function(callback) {
+  if ('ready' !== this._state) {
+    return callback && callback(new Error('database not ready.'));
+  }
+
+  if (this._timeoutObj) {
+    clearTimeout(this._timeoutObj);
+    delete this._timeoutObj;
+  }
+
+  var err = null;
+
+  try {
+    fs.writeFileSync(this.options.file, JSON.stringify(this._data), 'utf8');
+  } catch (e) {
+    err = new Error(e);
+  }
+
+  return callback && callback(err);
+};
 
 TinyDB.prototype._save = function(delay, callback) {
   var self = this;
@@ -70,13 +97,7 @@ TinyDB.prototype._save = function(delay, callback) {
   }
 
   if (typeof delay === 'number' && 0 > delay) {
-    if (self._timeoutObj) {
-      clearTimeout(self._timeoutObj);
-      delete self._timeoutObj;
-    }
-    
-    fs.writeFileSync(self.options.file, JSON.stringify(self._data), 'utf8');
-    return callback && callback(null);
+    this.flush();
   } else {
     if (this._timeoutObj) {
       return callback && callback(null);
@@ -85,51 +106,33 @@ TinyDB.prototype._save = function(delay, callback) {
     this._timeoutObj = setTimeout(function() {
       delete self._timeoutObj;
       fs.writeFile(self.options.file, JSON.stringify(self._data), 'utf8', function(err) {
-        if (err) throw err;
+        var e = null;
+
+        if (err) {
+          e = err;
+        }
         if (typeof delay === 'function') {
-          return delay(null);
+          return delay(e);
         } else {
-          return callback && callback(null);
+          return callback && callback(e);
         }
       });
     }, typeof delay === 'number' ? delay : 10000);
   }
-}
-
-TinyDB.prototype.close = function(callback) {
-  var self = this;
-
-  if ('ready' !== this._state) {
-    return callback && callback(new Error('database not ready.'));
-  }
-
-  this._state = 'closed';
-
-  if (this._timeoutObj) {
-    clearTimeout(this._timeoutObj);
-  }
-
-  fs.writeFile(this.options.file, JSON.stringify(this._data), 'utf8', function(err) {
-    if (err) throw err;
-
-    delete self._data;
-    self._data = {};
-    return callback && callback(null);
-  });
-}
+};
 
 TinyDB.prototype._guid = function() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
     return v.toString(16);
   });
-}
+};
 
 TinyDB.prototype.showOpts = function() {
   for (var idx in this.options) {
     console.error('"' + idx + '" : [' + this.options[idx] + ']');
   }
-}
+};
 
 TinyDB.prototype.setInfo = function(key, value, callback) {
   if ('ready' !== this._state) {
@@ -143,7 +146,7 @@ TinyDB.prototype.setInfo = function(key, value, callback) {
   this._data[key] = value;
   this._save();
   return callback && callback(null, key, value);
-}
+};
 
 TinyDB.prototype.getInfo = function(key, callback) {
   if ('ready' !== this._state) {
@@ -155,7 +158,7 @@ TinyDB.prototype.getInfo = function(key, callback) {
   } else {
     return callback && callback(new Error('key not exist.'));
   }
-}
+};
 
 TinyDB.prototype.forEach = function(callback) {
   if ('ready' !== this._state) {
@@ -167,7 +170,7 @@ TinyDB.prototype.forEach = function(callback) {
       callback && callback(null, this._data.data[i], i);
     }
   }
-}
+};
 
 TinyDB.prototype.find = function(query, callback) {
   if ('ready' !== this._state) {
@@ -194,7 +197,7 @@ TinyDB.prototype.find = function(query, callback) {
   } else {
     return callback && callback(new Error('not found'));
   }
-}
+};
 
 TinyDB.prototype.findById = function(id, callback) {
   if ('ready' !== this._state) {
@@ -208,7 +211,7 @@ TinyDB.prototype.findById = function(id, callback) {
   }
 
   return callback && callback(new Error('not found'));
-}
+};
 
 TinyDB.prototype.findByIdAndRemove = function(id, callback) {
   var self = this;
@@ -223,7 +226,7 @@ TinyDB.prototype.findByIdAndRemove = function(id, callback) {
       return callback && callback(null, item, idx);
     }
   });
-}
+};
 
 TinyDB.prototype.insertItem = function(item, idx, callback) {
   var func = typeof idx === 'function' ? idx : callback;
@@ -237,7 +240,7 @@ TinyDB.prototype.insertItem = function(item, idx, callback) {
   this._data.data.splice(index, 0, item);
   this._save();
   return func && func(null, item, index > (this._data.data.length - 1) ? (this._data.data.length - 1) : index);
-}
+};
 
 TinyDB.prototype.appendItem = function(item, callback) {
   if ('ready' !== this._state) {
@@ -249,6 +252,6 @@ TinyDB.prototype.appendItem = function(item, callback) {
   this._save();
 
   return callback && callback(null, item, this._data.data.length - 1);
-}
+};
 
 module.exports = TinyDB;

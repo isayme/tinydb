@@ -57,10 +57,9 @@ test_db.onReady = function() {
 APIs
 ====
 
-.close(callback)
+.flush(callback)
 ------
-Close opened databse, and write the data in memory to your specified databse file.  
-All other APIs calling will be disable by sending a error type to callback function.
+Write the data in memory to your specified databse file immediately.
 
 .find(query, callback)
 ---------

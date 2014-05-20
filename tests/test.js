@@ -5,17 +5,17 @@ function test(name, bTest, func) {
     return;
   }
 
-  console.log('========> ' + name);
+  console.log('\n========> ' + name);
   func();
 }
 
 //todos = new TinyDB({file: './test.db'});
-todos = new TinyDB('./test.db');
+todos = TinyDB('./test.db');
 
 todos.onReady = function() {
   console.log('database is ready.');
 
-  test('.forEach', false, function() {
+  test('.forEach', true, function() {
     todos.forEach(function (item) {
       for (var key in item) {
         console.log(key + ' : ' + item[key]);
@@ -27,7 +27,19 @@ todos.onReady = function() {
     todos.showOpts();
   });
 
-  test('.findById', false, function() {
+  test('.setInfo/.getInfo', true, function() {
+    todos.getInfo('testinfo', function(err, value) {
+      console.log('getInfo [testinfo] return {err: ' + err + ', value: ' + value + '}');
+    });
+    todos.setInfo('testinfo', 'testinfo value', function(err, value) {
+      console.log('setInfo [testinfo] return {err: ' + err + ', value: ' + value + '}');
+    });
+    todos.getInfo('testinfo', function(err, value) {
+      console.log('getInfo [testinfo] return {err: ' + err + ', value: ' + value + '}');
+    });
+  });
+
+  test('.findById', true, function() {
     todos.findById('53599ebd2935fa7c82178097', function(err, item) {
       if (err) { console.log(err); return; }
 
@@ -41,50 +53,18 @@ todos.onReady = function() {
     });
   });
 
-  test('.findByIdAndRemove', false, function() {
-    todos.findByIdAndRemove('53599ebd2935fa7c82178097', function(err, item) {
-      if (err) { console.log(err); return; }
-      console.log(item);
-    });
-
-    todos.findByIdAndRemove('53599ebd2935a7c82x178097', function(err, item) {
-      if (err) { console.log(err); return; }
-
-      console.log(item);
-    });
-  });
-
-  test('.setInfo/.getInfo', false, function() {
-    todos.getInfo('description', function(err, value) {
-      console.log(arguments);
-    });
-    todos.getInfo('testinfo', function(err, value) {
-      console.log(arguments);
-    });
-    todos.setInfo('testinfo', 'testinfo value', function(err, value) {
-      console.log(arguments);
-    });
-    todos.getInfo('testinfo', function(err, value) {
-      console.log(arguments);
-    });
-  });
-
-  test('.close', false, function() {
-    todos.findByIdAndRemove('53599ebd2935fa7c82178097', function(err, item) {
-      if (err) { console.log(err); return; }
-      console.log(item);
-      todos.close();
-    });
-  });
-
   test('.insertItem', true, function() {
     todos.insertItem(
         {
           title: 'insert',
           status: 'new'
         },
-        function() {
-          //console.log(todos._data.data);
+        function(err) {
+          if (err) {
+            console.log('insert failed.');
+          } else {
+            console.log('insert success.');
+          }
         });
 
     todos.insertItem(
@@ -93,8 +73,12 @@ todos.onReady = function() {
           status: 'new'
         },
         3,
-        function() {
-          //console.log(todos._data.data);
+        function(err) {
+          if (err) {
+            console.log('insert failed.');
+          } else {
+            console.log('insert success.');
+          }
         });
 
     todos.appendItem(
@@ -102,9 +86,59 @@ todos.onReady = function() {
           title: 'append',
           status: 'new'
         },
-        function() {
-          //console.log(todos._data.data);
+        function(err) {
+          if (err) {
+            console.log('append failed.');
+          } else {
+            console.log('append success.');
+          }
         });
+  });
+
+  test('.find/.findById.findByIdAndRemove', true, function() {
+    var rel;
+
+    todos.find({status: 'new'}, function(err, items) {
+      console.log('.find return:');
+      if (err) { console.log(err); return; }
+      rel = items;
+      console.log(items);
+    });
+
+
+    todos.findById('53599ebd2935fa7c82178097', function(err, item) {
+      console.log('.findById return:');
+      if (err) { console.log(err); return; }
+      console.log(item);
+    });
+
+    todos.findByIdAndRemove('53599ebd2935fa7c82178097', function(err, item) {
+      console.log('.findByIdAndRemove return:');
+      if (err) { console.log(err); return; }
+      console.log(item);
+    });
+
+    if (rel) {
+      todos.findById(rel[0]._id, function(err, item) {
+        console.log('.findById return:');
+        if (err) { console.log(err); return; }
+        console.log(item);
+      });
+
+      todos.findByIdAndRemove(rel[0]._id, function(err, item) {
+        console.log('.findByIdAndRemove return:');
+        if (err) { console.log(err); return; }
+
+        console.log(item);
+      });
+    }
+
+    todos.find({status: 'new'}, function(err, items) {
+      console.log('.find after item removed return:');
+      if (err) { console.log(err); return; }
+      rel = items;
+      console.log(items);
+    });
   });
 }
 
