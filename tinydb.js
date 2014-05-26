@@ -1,4 +1,4 @@
-fs = require('fs');
+var fs = require('fs');
 
 function TinyDB(opts) {
   var self = this;
